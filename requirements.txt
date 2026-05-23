@@ -1,0 +1,8 @@
+# Smart Energy Grid – Python dependencies
+# Install with: pip install -r requirements.txt
+
+paho-mqtt>=1.6.1
+psycopg2-binary>=2.9.9
+dash>=2.17.0
+plotly>=5.22.0
+pandas>=2.2.0

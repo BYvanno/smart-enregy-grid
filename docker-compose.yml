@@ -1,0 +1,58 @@
+version: "3.8"
+
+# Smart Energy Grid – Infrastructure Stack
+# Usage:
+#   docker-compose up -d
+#   docker-compose down -v   (destroy volumes too)
+
+services:
+
+  # ── EMQX MQTT Broker ────────────────────────────────────────────────────────
+  emqx:
+    image: emqx/emqx:5.6.1
+    container_name: emqx
+    restart: unless-stopped
+    ports:
+      - "1883:1883"     # MQTT
+      - "8083:8083"     # MQTT over WebSocket
+      - "8084:8084"     # MQTT over WSS
+      - "8883:8883"     # MQTT over TLS
+      - "18083:18083"   # Dashboard
+    environment:
+      EMQX_NAME:               emqx
+      EMQX_HOST:               127.0.0.1
+      EMQX_DASHBOARD__DEFAULT_USERNAME: admin
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: public
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    healthcheck:
+      test: ["CMD", "emqx", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ── TimescaleDB (PostgreSQL + TimescaleDB extension) ─────────────────────────
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: timescaledb
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB:       energy_db
+    volumes:
+      - tsdb_data:/var/lib/postgresql/data
+      - ./sql/create_db.sql:/docker-entrypoint-initdb.d/01_create_db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d energy_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  emqx_data:
+  emqx_log:
+  tsdb_data:
